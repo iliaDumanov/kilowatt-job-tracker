@@ -267,6 +267,52 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
 .lightbox button { position: absolute; top: 20px; right: 30px; font-size: 32px; background: none; border: none; color: white; }
 
+.lock-btn { font-size: 15px; padding: 8px 11px; }
+
+/* ---------- Auth gate (lock screen) ---------- */
+.auth-gate {
+  position: fixed; inset: 0; z-index: 1000; padding: 20px;
+  background: linear-gradient(160deg, var(--blue-dark), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-gate.hidden { display: none; }
+.auth-card {
+  background: var(--panel); border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; box-sizing: border-box;
+}
+.auth-logo { height: 52px; margin-bottom: 16px; }
+.auth-card h2 { margin: 0 0 20px; font-size: 18px; }
+.auth-mode.hidden { display: none; }
+.auth-mode label { display: block; text-align: left; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 14px; }
+.auth-mode input {
+  width: 100%; margin-top: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 16px; box-sizing: border-box; letter-spacing: 1px;
+}
+.auth-error { color: var(--danger); font-size: 13px; min-height: 18px; margin-bottom: 4px; }
+.auth-full-btn { width: 100%; margin-top: 6px; }
+.auth-full-btn + .auth-full-btn { margin-top: 10px; }
+
+.auth-biometric-btn {
+  width: 84px; height: 84px; border-radius: 50%; border: none; background: var(--bg);
+  margin: 4px auto 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer; color: var(--blue);
+}
+.auth-biometric-btn svg { width: 32px; height: 32px; }
+.auth-biometric-btn span { font-size: 11px; font-weight: 600; }
+.auth-biometric-btn.hidden { display: none; }
+
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin: 4px 0 22px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); box-sizing: border-box; }
+.pin-dot.filled { background: var(--blue); border-color: var(--blue); }
+
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 230px; margin: 0 auto; }
+.pin-pad button {
+  aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); background: var(--bg);
+  font-size: 19px; font-weight: 600; color: var(--text); cursor: pointer;
+}
+.pin-pad button:active { background: var(--border); }
+.pin-pad button.pin-key-secondary { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
 @media (max-width: 720px) {
   .topbar { flex-wrap: wrap; }
   .topbar-actions { width: 100%; flex-wrap: wrap; }

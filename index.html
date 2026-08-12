@@ -6,13 +6,208 @@
 <title>Kilowatt Energy — Job Tracker</title>
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Kilowatt Energy">
 <meta name="theme-color" content="#1853a8">
 </head>
 <body>
+
+<div id="auth-gate" class="auth-gate">
+  <div class="auth-card">
+    <img class="auth-logo" src="logo.png" alt="Kilowatt Energy">
+
+    <div id="auth-setup" class="auth-mode hidden">
+      <h2>Set up your access</h2>
+      <label>Your name
+        <input type="text" id="setup-name" placeholder="e.g. Ilia" autocomplete="off">
+      </label>
+      <label>Choose a 4-digit PIN
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="setup-pin" autocomplete="off">
+      </label>
+      <label>Confirm PIN
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="setup-pin-confirm" autocomplete="off">
+      </label>
+      <div id="setup-error" class="auth-error"></div>
+      <button class="btn btn-primary auth-full-btn" id="setup-save-btn">Save &amp; Continue</button>
+      <button class="btn btn-secondary auth-full-btn hidden" id="setup-faceid-btn">Enable Face ID / Touch ID</button>
+    </div>
+
+    <div id="auth-lock" class="auth-mode hidden">
+      <h2 id="lock-greeting">Welcome back</h2>
+      <button class="auth-biometric-btn hidden" id="lock-faceid-btn" title="Unlock with Face ID / Touch ID">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3.5C6 4.5 4.5 6 4 8m12-4.5C18 4.5 19.5 6 20 8M4 16c.5 2 2 3.5 4 4.5m12-4.5c-.5 2-2 3.5-4 4.5M9 9v2m6-2v2M9 16c1 1 2 1.2 3 1.2s2-.2 3-1.2M12 8v5h-1.3"/></svg>
+        <span>Face ID</span>
+      </button>
+      <div class="pin-dots" id="pin-dots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-pad" id="pin-pad">
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+        <button data-key="reset" class="pin-key-secondary">Reset</button><button data-key="0">0</button><button data-key="back">⌫</button>
+      </div>
+      <div id="lock-error" class="auth-error"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const gate = document.getElementById('auth-gate');
+  const setupView = document.getElementById('auth-setup');
+  const lockView = document.getElementById('auth-lock');
+  const nameInput = document.getElementById('setup-name');
+  const pinInput = document.getElementById('setup-pin');
+  const pinConfirmInput = document.getElementById('setup-pin-confirm');
+  const setupError = document.getElementById('setup-error');
+  const setupSaveBtn = document.getElementById('setup-save-btn');
+  const setupFaceIdBtn = document.getElementById('setup-faceid-btn');
+  const lockGreeting = document.getElementById('lock-greeting');
+  const lockFaceIdBtn = document.getElementById('lock-faceid-btn');
+  const pinDots = document.querySelectorAll('#pin-dots .pin-dot');
+  const pinPad = document.getElementById('pin-pad');
+  const lockError = document.getElementById('lock-error');
+
+  const KEY = { name: 'kwt_auth_name', pin: 'kwt_auth_pin', credId: 'kwt_auth_cred_id' };
+  let enteredPin = '';
+
+  function bufToBase64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+  function base64ToBuf(b64) { return Uint8Array.from(atob(b64), c => c.charCodeAt(0)); }
+  function randomBytes(len) { return crypto.getRandomValues(new Uint8Array(len)); }
+
+  async function platformAuthAvailable() {
+    return !!(window.PublicKeyCredential &&
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable &&
+      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+  }
+
+  async function registerBiometric(name) {
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: randomBytes(32),
+        rp: { name: 'Kilowatt Energy Job Tracker' },
+        user: { id: randomBytes(16), name: name, displayName: name },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000,
+      },
+    });
+    localStorage.setItem(KEY.credId, bufToBase64(cred.rawId));
+  }
+
+  async function verifyBiometric() {
+    const credId = localStorage.getItem(KEY.credId);
+    if (!credId) throw new Error('no credential');
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        allowCredentials: [{ id: base64ToBuf(credId), type: 'public-key' }],
+        userVerification: 'required',
+        timeout: 60000,
+      },
+    });
+  }
+
+  function unlock() {
+    sessionStorage.setItem('kwt_unlocked', '1');
+    gate.classList.add('hidden');
+  }
+
+  function showSetup() {
+    setupView.classList.remove('hidden');
+    lockView.classList.add('hidden');
+    platformAuthAvailable().then((avail) => { if (avail) setupFaceIdBtn.classList.remove('hidden'); });
+  }
+
+  function updatePinDots() {
+    pinDots.forEach((dot, i) => dot.classList.toggle('filled', i < enteredPin.length));
+  }
+
+  async function tryBiometricUnlock() {
+    lockError.textContent = '';
+    try {
+      await verifyBiometric();
+      unlock();
+    } catch (e) { /* cancelled or failed, fall back to PIN */ }
+  }
+
+  function showLock() {
+    setupView.classList.add('hidden');
+    lockView.classList.remove('hidden');
+    lockGreeting.textContent = 'Welcome back, ' + (localStorage.getItem(KEY.name) || 'there');
+    enteredPin = '';
+    updatePinDots();
+    lockError.textContent = '';
+    if (localStorage.getItem(KEY.credId)) {
+      lockFaceIdBtn.classList.remove('hidden');
+      tryBiometricUnlock();
+    } else {
+      lockFaceIdBtn.classList.add('hidden');
+    }
+  }
+
+  function checkPin() {
+    if (enteredPin === localStorage.getItem(KEY.pin)) {
+      unlock();
+    } else {
+      lockError.textContent = 'Wrong PIN, try again';
+      enteredPin = '';
+      updatePinDots();
+    }
+  }
+
+  pinPad.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (key === 'back') enteredPin = enteredPin.slice(0, -1);
+    else if (key === 'reset') { localStorage.removeItem(KEY.pin); localStorage.removeItem(KEY.name); localStorage.removeItem(KEY.credId); showSetup(); return; }
+    else if (enteredPin.length < 4) enteredPin += key;
+    updatePinDots();
+    if (enteredPin.length === 4) setTimeout(checkPin, 120);
+  });
+
+  lockFaceIdBtn.addEventListener('click', tryBiometricUnlock);
+
+  setupSaveBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    const pin = pinInput.value.trim();
+    const pinConfirm = pinConfirmInput.value.trim();
+    if (!name) { setupError.textContent = 'Enter your name'; return; }
+    if (!/^\d{4}$/.test(pin)) { setupError.textContent = 'PIN must be 4 digits'; return; }
+    if (pin !== pinConfirm) { setupError.textContent = "PINs don't match"; return; }
+    setupError.textContent = '';
+    localStorage.setItem(KEY.name, name);
+    localStorage.setItem(KEY.pin, pin);
+    unlock();
+  });
+
+  setupFaceIdBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim() || 'there';
+    try {
+      await registerBiometric(name);
+      setupFaceIdBtn.textContent = '✓ Face ID / Touch ID enabled';
+      setupFaceIdBtn.disabled = true;
+    } catch (e) {
+      setupError.textContent = 'Could not enable Face ID on this device';
+    }
+  });
+
+  window.reLockApp = function () {
+    sessionStorage.removeItem('kwt_unlocked');
+    gate.classList.remove('hidden');
+    showLock();
+  };
+
+  const hasPin = !!localStorage.getItem(KEY.pin);
+  const alreadyUnlocked = sessionStorage.getItem('kwt_unlocked') === '1';
+  if (alreadyUnlocked) gate.classList.add('hidden');
+  else if (hasPin) showLock();
+  else showSetup();
+})();
+</script>
 
 <header class="topbar">
   <div class="brand">
@@ -33,6 +228,7 @@
     <span id="offline-status" class="offline-status offline-pending">⏳ Checking offline mode…</span>
     <input type="text" id="global-search" placeholder="Search clients, address...">
     <button class="btn btn-primary" id="new-job-btn">+ New Job</button>
+    <button class="btn btn-ghost lock-btn" id="lock-app-btn" title="Lock app" onclick="reLockApp()">🔒</button>
   </div>
 </header>
 
@@ -212,7 +408,7 @@
 
   async function checkCache() {
     try {
-      const cache = await caches.open('kilowatt-jobs-v2');
+      const cache = await caches.open('kilowatt-jobs-v4');
       const keys = await cache.keys();
       const cachedPaths = keys.map(r => new URL(r.url).pathname.split('/').pop());
       const missing = REQUIRED.filter(f => !cachedPaths.includes(f));

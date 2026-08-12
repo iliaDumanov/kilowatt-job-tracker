@@ -1,10 +1,13 @@
-const CACHE_NAME = 'kilowatt-jobs-v2';
+const CACHE_NAME = 'kilowatt-jobs-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './logo.png',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
   './manifest.json',
 ];
 
