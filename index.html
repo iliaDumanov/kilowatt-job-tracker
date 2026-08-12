@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kilowatt Energy — Job Tracker</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kilowatt Energy">
+<meta name="theme-color" content="#1853a8">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="brand-logo" src="logo.png" alt="Kilowatt Energy">
+    <div class="brand-text">
+      <strong>Kilowatt Energy</strong>
+      <span>Job Tracker</span>
+    </div>
+  </div>
+
+  <nav class="main-nav">
+    <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+    <button class="nav-btn" data-view="jobs">Jobs</button>
+    <button class="nav-btn" data-view="calendar">Calendar</button>
+  </nav>
+
+  <div class="topbar-actions">
+    <span id="offline-status" class="offline-status offline-pending">⏳ Checking offline mode…</span>
+    <input type="text" id="global-search" placeholder="Search clients, address...">
+    <button class="btn btn-primary" id="new-job-btn">+ New Job</button>
+  </div>
+</header>
+
+<main id="app-main">
+
+  <!-- DASHBOARD VIEW -->
+  <section id="view-dashboard" class="view">
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="dash-columns">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Scheduled this week</h3>
+        </div>
+        <div id="dash-week-list" class="mini-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Materials pending</h3>
+        </div>
+        <div id="dash-materials-list" class="mini-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>New inquiries</h3>
+        </div>
+        <div id="dash-leads-list" class="mini-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOBS LIST VIEW -->
+  <section id="view-jobs" class="view hidden">
+    <div class="filter-bar">
+      <div class="filter-group" id="stage-filters">
+        <button class="chip active" data-stage="all">All</button>
+        <button class="chip" data-stage="lead">Lead</button>
+        <button class="chip" data-stage="quoted">Quoted</button>
+        <button class="chip" data-stage="scheduled">Scheduled</button>
+        <button class="chip" data-stage="in_progress">In Progress</button>
+        <button class="chip" data-stage="installed">Installed</button>
+        <button class="chip" data-stage="followup">Follow-up</button>
+      </div>
+      <select id="service-filter">
+        <option value="all">All services</option>
+        <option value="solar">Solar panels</option>
+        <option value="heatpump">Heat pump</option>
+        <option value="aircon">Air conditioning</option>
+        <option value="battery">Battery / EV charger</option>
+        <option value="industry">Industry / KMO</option>
+      </select>
+    </div>
+    <div id="job-grid" class="job-grid"></div>
+    <div id="job-empty" class="empty-state hidden">
+      <p>No jobs match this filter yet.</p>
+    </div>
+  </section>
+
+  <!-- CALENDAR VIEW -->
+  <section id="view-calendar" class="view hidden">
+    <div class="calendar-header">
+      <button class="btn btn-ghost" id="cal-prev">‹</button>
+      <h3 id="cal-month-label"></h3>
+      <button class="btn btn-ghost" id="cal-next">›</button>
+      <button class="btn btn-ghost" id="cal-today">Today</button>
+    </div>
+    <div class="calendar-grid" id="calendar-weekdays">
+      <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+    </div>
+    <div class="calendar-grid" id="calendar-body"></div>
+  </section>
+
+</main>
+
+<!-- JOB DETAIL / EDIT MODAL -->
+<div id="job-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <input type="text" id="jm-client-name" class="modal-title-input" placeholder="Client name">
+        <div class="modal-subtitle">
+          <select id="jm-stage"></select>
+          <select id="jm-service"></select>
+        </div>
+      </div>
+      <button class="modal-close" id="jm-close">&times;</button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="materials">Materials</button>
+      <button class="tab-btn" data-tab="notes">Notes</button>
+      <button class="tab-btn" data-tab="photos">Photos</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- OVERVIEW TAB -->
+      <div class="tab-pane active" id="tab-overview">
+        <div class="form-grid">
+          <label>Address
+            <input type="text" id="jm-address" placeholder="Street, city">
+          </label>
+          <label>Phone
+            <input type="text" id="jm-phone" placeholder="+32 ...">
+          </label>
+          <label>Email
+            <input type="email" id="jm-email" placeholder="client@email.com">
+          </label>
+          <label>Assigned installer / team
+            <input type="text" id="jm-installer" placeholder="e.g. Team Eddy">
+          </label>
+          <label>Site visit date
+            <input type="date" id="jm-visit-date">
+          </label>
+          <label>Installation date
+            <input type="date" id="jm-install-date">
+          </label>
+        </div>
+      </div>
+
+      <!-- MATERIALS TAB -->
+      <div class="tab-pane" id="tab-materials">
+        <div class="materials-add">
+          <input type="text" id="mat-name" placeholder="Item, e.g. Daikin Altherma unit">
+          <input type="number" id="mat-qty" placeholder="Qty" min="1" value="1">
+          <button class="btn btn-secondary" id="mat-add-btn">Add</button>
+        </div>
+        <table class="materials-table">
+          <thead><tr><th>Item</th><th>Qty</th><th>Status</th><th></th></tr></thead>
+          <tbody id="materials-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="tab-pane" id="tab-notes">
+        <div class="notes-add">
+          <textarea id="note-input" placeholder="Add a note about this job..."></textarea>
+          <button class="btn btn-secondary" id="note-add-btn">Add note</button>
+        </div>
+        <div id="notes-list" class="notes-list"></div>
+      </div>
+
+      <!-- PHOTOS TAB -->
+      <div class="tab-pane" id="tab-photos">
+        <label class="photo-upload">
+          <input type="file" id="photo-input" accept="image/*" multiple hidden>
+          <span>+ Upload photos</span>
+        </label>
+        <div id="photo-grid" class="photo-grid"></div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="jm-delete">Delete job</button>
+      <button class="btn btn-primary" id="jm-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" class="lightbox hidden">
+  <img id="lightbox-img" src="" alt="">
+  <button id="lightbox-close">&times;</button>
+</div>
+
+<script src="app.js"></script>
+<script>
+(function () {
+  const statusEl = document.getElementById('offline-status');
+  const REQUIRED = ['index.html', 'style.css', 'app.js', 'logo.png', 'manifest.json'];
+
+  function setStatus(state, text) {
+    statusEl.className = 'offline-status offline-' + state;
+    statusEl.textContent = text;
+  }
+
+  async function checkCache() {
+    try {
+      const cache = await caches.open('kilowatt-jobs-v2');
+      const keys = await cache.keys();
+      const cachedPaths = keys.map(r => new URL(r.url).pathname.split('/').pop());
+      const missing = REQUIRED.filter(f => !cachedPaths.includes(f));
+      if (missing.length === 0) {
+        setStatus('ready', '✓ Works offline');
+      } else {
+        setStatus('failed', '⚠ Not ready — tap to retry');
+      }
+    } catch (e) {
+      setStatus('failed', '⚠ Not ready — tap to retry');
+    }
+  }
+
+  async function setup() {
+    const isSecure = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+    if (!('serviceWorker' in navigator)) {
+      setStatus('failed', isSecure ? '⚠ Offline unsupported here' : '⚠ Needs HTTPS to work offline');
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      reg.update();
+      setTimeout(checkCache, 800);
+    } catch (e) {
+      setStatus('failed', '⚠ Setup failed — tap to retry');
+    }
+  }
+
+  statusEl.addEventListener('click', () => { setStatus('pending', '⏳ Checking offline mode…'); setup(); });
+  window.addEventListener('load', setup);
+})();
+</script>
+</body>
+</html>
