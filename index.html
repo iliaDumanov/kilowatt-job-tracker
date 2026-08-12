@@ -16,7 +16,12 @@
 
 <div id="auth-gate" class="auth-gate">
   <div class="auth-card">
-    <img class="auth-logo" src="logo.png" alt="Kilowatt Energy">
+    <div class="auth-splash">
+      <div class="auth-splash-icon-fly" id="auth-splash-fly">
+        <img class="auth-splash-icon" src="icon-512.png" alt="Kilowatt Energy">
+      </div>
+      <div class="auth-splash-name" id="auth-splash-name">Kilowatt Energy</div>
+    </div>
 
     <div id="auth-setup" class="auth-mode hidden">
       <h2>Set up your access</h2>
@@ -69,6 +74,8 @@
   const pinDots = document.querySelectorAll('#pin-dots .pin-dot');
   const pinPad = document.getElementById('pin-pad');
   const lockError = document.getElementById('lock-error');
+  const splashFly = document.getElementById('auth-splash-fly');
+  const splashName = document.getElementById('auth-splash-name');
 
   const KEY = { name: 'kwt_auth_name', pin: 'kwt_auth_pin', credId: 'kwt_auth_cred_id' };
   let enteredPin = '';
@@ -76,6 +83,12 @@
   function bufToBase64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
   function base64ToBuf(b64) { return Uint8Array.from(atob(b64), c => c.charCodeAt(0)); }
   function randomBytes(len) { return crypto.getRandomValues(new Uint8Array(len)); }
+
+  function replaySplashAnimation() {
+    [splashFly, splashName].forEach((el) => { el.style.animation = 'none'; });
+    void splashFly.offsetWidth;
+    [splashFly, splashName].forEach((el) => { el.style.animation = ''; });
+  }
 
   async function platformAuthAvailable() {
     return !!(window.PublicKeyCredential &&
@@ -118,6 +131,7 @@
   function showSetup() {
     setupView.classList.remove('hidden');
     lockView.classList.add('hidden');
+    replaySplashAnimation();
     platformAuthAvailable().then((avail) => { if (avail) setupFaceIdBtn.classList.remove('hidden'); });
   }
 
@@ -136,6 +150,7 @@
   function showLock() {
     setupView.classList.add('hidden');
     lockView.classList.remove('hidden');
+    replaySplashAnimation();
     lockGreeting.textContent = 'Welcome back, ' + (localStorage.getItem(KEY.name) || 'there');
     enteredPin = '';
     updatePinDots();
@@ -408,7 +423,7 @@
 
   async function checkCache() {
     try {
-      const cache = await caches.open('kilowatt-jobs-v4');
+      const cache = await caches.open('kilowatt-jobs-v5');
       const keys = await cache.keys();
       const cachedPaths = keys.map(r => new URL(r.url).pathname.split('/').pop());
       const missing = REQUIRED.filter(f => !cachedPaths.includes(f));

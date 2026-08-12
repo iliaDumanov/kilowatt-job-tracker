@@ -23,6 +23,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 button { font-family: inherit; cursor: pointer; }
@@ -33,7 +34,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 12px 24px;
+  padding: 14px 24px;
+  padding-top: calc(14px + env(safe-area-inset-top));
+  padding-left: calc(24px + env(safe-area-inset-left));
+  padding-right: calc(24px + env(safe-area-inset-right));
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -42,7 +46,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-logo { height: 40px; width: auto; }
+.brand-logo { height: 52px; width: auto; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand-text strong { font-size: 15px; color: var(--blue); }
 .brand-text span { font-size: 11px; color: var(--text-muted); }
@@ -280,7 +284,34 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
   background: var(--panel); border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 340px;
   box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; box-sizing: border-box;
 }
-.auth-logo { height: 52px; margin-bottom: 16px; }
+.auth-splash { display: flex; flex-direction: column; align-items: center; margin-bottom: 22px; }
+.auth-splash-icon-fly {
+  width: 108px; height: 108px;
+  animation: authFlyIn 1.05s cubic-bezier(.22,.85,.3,1.1) both;
+}
+.auth-splash-icon {
+  width: 100%; height: 100%; display: block;
+  animation: authFloat 3.4s ease-in-out 1.05s infinite;
+}
+.auth-splash-name {
+  margin-top: 12px; font-size: 21px; font-weight: 800; color: var(--blue);
+  letter-spacing: .01em; opacity: 0;
+  animation: authNameIn .6s ease-out .9s forwards;
+}
+@keyframes authFlyIn {
+  0%   { transform: translate(-150px, -60px) rotate(-32deg) scale(.32); opacity: 0; }
+  55%  { transform: translate(16px, 10px) rotate(9deg) scale(1.08); opacity: 1; }
+  75%  { transform: translate(-7px, -4px) rotate(-3deg) scale(.98); }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+}
+@keyframes authFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes authNameIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .auth-card h2 { margin: 0 0 20px; font-size: 18px; }
 .auth-mode.hidden { display: none; }
 .auth-mode label { display: block; text-align: left; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 14px; }

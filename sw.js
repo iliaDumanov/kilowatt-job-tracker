@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kilowatt-jobs-v4';
+const CACHE_NAME = 'kilowatt-jobs-v5';
 const ASSETS = [
   './',
   './index.html',
